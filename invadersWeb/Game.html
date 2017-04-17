@@ -1,0 +1,270 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+
+    <script src="js/background.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/enemy.js"></script>
+<!--    <script src="js/invaders.js"></script>-->
+
+    <script>
+/*
+        (function(){
+            var invadersGame;
+
+            var requestAnimationFrame = window.requestAnimationFrame
+                || window.mozRequestAnimationFrame
+                || window.webkitRequestAnimationFrame
+                || window.msRequestAnimationFrame;
+            window.requestAnimationFrame = requestAnimationFrame;
+
+            function relMouseCoords(event) {
+                if (event.offsetX !== undefined && event.offsetY !== undefined) {
+                    invadersGame.pointerX = event.offsetX;
+                    invadersGame.pointerY = event.offsetY;
+                } else if (event.layerX !== undefined && event.layerY !== undefined) {
+                    invadersGame.pointerX = event.layerX;
+                    invadersGame.pointerY = event.layerY;
+                }
+            }
+
+            function clickCoords(event) {
+                if (event.offsetX !== undefined && event.offsetY !== undefined) {
+                    clickX = event.offsetX;
+                    clickY = event.offsetY;
+                } else if (event.layerX !== undefined && event.layerY !== undefined) {
+                    clickX = event.layerX;
+                    clickY = event.layerY;
+                }
+
+                invadersGame.player.fireBullet();
+            }
+
+            function init() {
+                invadersGame = new Invaders();
+                invadersGame.init();
+            }
+
+            window.addEventListener('mousemove', relMouseCoords, false);
+            window.addEventListener('mousedown', clickCoords, false);
+            window.addEventListener('DOMContentLoaded', init, false);
+
+        })();
+*/
+(function () {
+    //"use strict";
+
+    var canvas, ctx;
+    var background;
+
+    var player;
+    var alien;
+    var boom;
+    var fire;
+
+    var frame = 0;
+
+    var pointerX = 0;
+    var pointerY = 0;
+    var clickX = 0;
+    var clickY = 0;
+
+    var canvasWidth = window.outerWidth;
+    var canvasHeight = window.outerHeight;
+
+    var requestAnimationFrame = window.requestAnimationFrame
+        || window.mozRequestAnimationFrame
+        || window.webkitRequestAnimationFrame
+        || window.msRequestAnimationFrame;
+    window.requestAnimationFrame = requestAnimationFrame;
+
+    function init() {
+        canvas = document.getElementById('canvas');
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+        ctx = canvas.getContext('2d');
+        preloadAssets();
+    }
+
+    function preloadAssets() {
+        var _toPreload = 0;
+        background = new Background(ctx, canvasWidth, canvasHeight);
+        var addImage = function (src) {
+            var img = new Image();
+            img.src = src;
+            _toPreload++;
+            img.addEventListener('load', function () {
+                _toPreload--;
+            }, false);
+            return img;
+        }
+
+        var checkResources = function () {
+            if (_toPreload == 0) {
+                draw();
+            } else {
+                setTimeout(checkResources, 200);
+            }
+        }
+
+        player = new Player(ctx, addImage("assets/ship.png"));
+        player.loadAmmo();
+
+        alien = addImage("assets/alienSprite.png");
+        addSaucers();
+        checkResources();
+    }
+
+    var saucers = new Array();
+    function addSaucers() {
+        saucers.push(new Enemy(ctx, alien, canvasWidth, canvasHeight));
+    }
+
+    function drawSaucers() {
+        for (var i = 0; i < saucers.length; i++) {
+            saucers[i].draw();
+        }
+    }
+
+    var x = 1;
+    var pause = false;
+    function draw() {
+        if(pause){
+            ctx.fillStyle = "#00FFFF";
+            ctx.font = "bold 150px Arial";
+            ctx.fillText("PAUSED", 100, 200);
+        }else{
+            frame += .1;
+            background.draw(pointerX, pointerY);
+            drawSaucers();
+            player.draw(pointerX - 24, pointerY - 24);
+
+            detectHits(player.bullets, saucers);
+            drawStats();
+        }
+        window.requestAnimationFrame(draw);
+    }
+
+    function detectHits(ary1, ary2) {
+        for (var i = 0; i < ary1.length; i++) {
+            if (ary1[i].hit !== 1) {
+                for (var j = 0; j < ary2.length; j++) {
+                    if (ary2[j].hit !== 1) {
+                        if (detectHit(ary2[j], ary1[i])) {
+                            ary2[j].takeDamage();
+                            ary1[i].takeDamage();
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+
+    function detectHit(obj1, obj2) {
+        if (obj1.x + (obj1.r) > obj2.x
+            && obj1.x - (obj1.r) < obj2.x
+            && obj1.y + (obj1.r) > obj2.y
+            && obj1.y - (obj1.r) < obj2.y) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+
+    function drawStats() {
+        var hits = 0;
+        for (var i = 0; i < player.bullets.length; i++) {
+            hits += player.bullets[i].hit;
+        }
+
+        var servivors = saucers.length;
+        for (var i = 0; i < saucers.length; i++) {
+            if(!saucers[i].exploding){
+                servivors -= saucers[i].hit;
+            }
+        }
+
+        if (servivors <= 0) {
+            for (var i = 0; i < saucers.length; i++) {
+                saucers[i].reset();
+            }
+            addSaucers();
+        }
+
+
+        ctx.fillStyle = "#00ff00";
+        ctx.font = "bold 25px Arial";
+        ctx.fillText("Score: " + hits + "/" + player.bullets.length, 50, 50);
+        ctx.fillText("Enemies: " + servivors, 50, 75);
+        ctx.fillText("Hits: " + hits, 50, 100);
+        ctx.fillText("Bullets Fired: " + player.bullets.length, 50, 125);
+        ctx.fillText("Accuracy: " + Math.floor((hits / player.bullets.length) * 100) + "%", 50, 150);
+    }
+
+    function relMouseCoords(event) {
+        if (event.offsetX !== undefined && event.offsetY !== undefined) {
+            pointerX = event.offsetX;
+            pointerY = event.offsetY;
+        } else if (event.layerX !== undefined && event.layerY !== undefined) {
+            pointerX = event.layerX;
+            pointerY = event.layerY;
+        }
+    }
+
+    function clickCoords(event) {
+        if (event.offsetX !== undefined && event.offsetY !== undefined) {
+            clickX = event.offsetX;
+            clickY = event.offsetY;
+        } else if (event.layerX !== undefined && event.layerY !== undefined) {
+            clickX = event.layerX;
+            clickY = event.layerY;
+        }
+
+        player.fireBullet();
+    }
+
+    window.addEventListener('mousemove', relMouseCoords, false);
+    window.addEventListener('mousedown', clickCoords, false);
+    window.addEventListener('DOMContentLoaded', init, false);
+    window.addEventListener('keydown', function(event) {
+      switch (event.keyCode) {
+        case 37: // Left
+                //Game.player.moveLeft();
+                //pause = true;
+        break;
+
+        case 38: // Up
+          //Game.player.moveUp();
+        break;
+
+        case 39: // Right
+          //Game.player.moveRight();
+        break;
+
+          case 40: // Down
+            //Game.player.moveDown();
+          break;
+
+          case 32: // space
+                  pause = !pause;//player.fireBullet();
+            //Game.player.moveDown();
+          break;
+      }
+    }, false);
+
+})();
+
+    </script>
+<!--
+    <script data-main="js/invaders" src="js/require.js"></script>
+-->
+    <link href="css/default.css" rel="stylesheet" />
+
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+</body>
+</html>

@@ -1,0 +1,26 @@
+﻿
+@media screen and (-ms-view-state: fullscreen-landscape) {
+}
+
+@media screen and (-ms-view-state: filled) {
+}
+
+@media screen and (-ms-view-state: snapped) {
+}
+
+@media screen and (-ms-view-state: fullscreen-portrait) {
+}
+
+@-ms-viewport {
+    width: 1366;
+    height: 768;
+}
+        
+body 
+{
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    /*-ms-touch-action: none;*/
+    cursor : none;
+}
